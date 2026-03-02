@@ -367,23 +367,14 @@ export class MCPConnection extends EventEmitter {
         return undiciFetch(input, { ...init, dispatcher });
       }
 
-      let initHeaders: Record<string, string> = {};
-      if (init?.headers) {
-        if (init.headers instanceof Headers) {
-          initHeaders = Object.fromEntries(init.headers.entries());
-        } else if (Array.isArray(init.headers)) {
-          initHeaders = Object.fromEntries(init.headers);
-        } else {
-          initHeaders = init.headers as Record<string, string>;
-        }
+      const mergedHeaders = new Headers(init?.headers as HeadersInit | undefined);
+      for (const [key, value] of Object.entries(requestHeaders)) {
+        mergedHeaders.set(key, value);
       }
 
       return undiciFetch(input, {
         ...init,
-        headers: {
-          ...initHeaders,
-          ...requestHeaders,
-        },
+        headers: mergedHeaders,
         dispatcher,
       });
     };

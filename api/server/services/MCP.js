@@ -9,6 +9,7 @@ const {
 const {
   sendEvent,
   MCPOAuthHandler,
+  getUserMCPAuthMap,
   isMCPDomainAllowed,
   normalizeServerName,
   normalizeJsonSchema,
@@ -28,7 +29,7 @@ const {
   getFlowStateManager,
   getMCPManager,
 } = require('~/config');
-const { findToken, createToken, updateToken } = require('~/models');
+const { findToken, createToken, updateToken, findPluginAuthsByKeys } = require('~/models');
 const { getGraphApiToken } = require('./GraphTokenService');
 const { reinitMCPServer } = require('./Tools/mcp');
 const { getAppConfig } = require('./Config');
@@ -498,8 +499,17 @@ function createToolInstance({
         derivedSignal.addEventListener('abort', abortHandler, { once: true });
       }
 
-      const customUserVars =
+      let customUserVars =
         config?.configurable?.userMCPAuthMap?.[`${Constants.mcp_prefix}${serverName}`];
+
+      if ((!customUserVars || Object.keys(customUserVars).length === 0) && userId) {
+        const fallbackAuthMap = await getUserMCPAuthMap({
+          userId,
+          servers: [serverName],
+          findPluginAuthsByKeys,
+        });
+        customUserVars = fallbackAuthMap?.[`${Constants.mcp_prefix}${serverName}`];
+      }
 
       const result = await mcpManager.callTool({
         serverName,
